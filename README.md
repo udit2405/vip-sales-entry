@@ -1,5 +1,5 @@
 # Daily Sales Report
 
-`Code.gs` is the Google Apps Script bound to the sales Google Sheet. Deployed as a Web App (Execute as Me, access Anyone), it serves the form itself and writes each store's values into that store's row (matched by SAP code), with a "Last Updated" stamp.
-
-`index.html` on GitHub Pages simply redirects to the Web App URL. `form-github-version.html` is an older standalone form (append-row version), unused.
+- `index.html` — public form (GitHub Pages). Anyone can submit; no Google account needed.
+- `Code.gs` — Apps Script bound to the Google Sheet. Deploy as Web App (Execute as: Me, Access: Anyone). Writes each store's values into that store's row (matched by SAP code) + "Last Updated".
+- Paste the Web App URL into `SHEET_URL` in `index.html`.

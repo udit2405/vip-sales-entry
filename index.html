@@ -1,5 +1,606 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Daily Sales Report</title>
-<meta http-equiv="refresh" content="0; url=https://script.google.com/macros/s/AKfycbzLxEvctztAchC_23py_lHNfV4_fc4r2xIjXbU-NEZ9-AWDMY2E68FXbwuyowTVrzTtWg/exec">
-</head><body><p>Opening form… <a href="https://script.google.com/macros/s/AKfycbzLxEvctztAchC_23py_lHNfV4_fc4r2xIjXbU-NEZ9-AWDMY2E68FXbwuyowTVrzTtWg/exec">Click here if it doesn't open</a></p></body></html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Daily Sales Entry</title>
+<style>
+  :root { --bg:#f4f5f7; --card:#fff; --ink:#1a1d23; --muted:#6b7280; --line:#d9dce3; --brand:#1d4ed8; --ok:#15803d; --err:#b91c1c; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif; }
+  .wrap { max-width:520px; margin:0 auto; padding:16px; }
+  h1 { font-size:22px; margin:8px 0 16px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; margin-bottom:14px; }
+  .card h2 { font-size:13px; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); margin:0 0 12px; }
+  label { display:block; font-weight:600; font-size:14px; margin:12px 0 4px; }
+  label:first-of-type { margin-top:0; }
+  input, select { width:100%; padding:12px; font-size:16px; border:1px solid var(--line); border-radius:8px; background:#fff; color:var(--ink); }
+  input:focus, select:focus { outline:2px solid var(--brand); border-color:var(--brand); }
+  button { width:100%; padding:14px; font-size:17px; font-weight:700; border:0; border-radius:10px; background:var(--brand); color:#fff; cursor:pointer; }
+  button:disabled { opacity:.6; cursor:default; }
+  #msg { margin-top:12px; padding:12px; border-radius:8px; display:none; font-weight:600; }
+  #msg.ok { display:block; background:#dcfce7; color:var(--ok); }
+  #msg.err { display:block; background:#fee2e2; color:var(--err); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Daily Sales Entry</h1>
+  <form id="f" autocomplete="off">
+    <div class="card">
+      <h2>Store</h2>
+      <label for="store">Store name</label>
+      <select id="store" name="Store" required><option value="">Select store…</option></select>
+    </div>
+
+    <div class="card">
+      <h2>VIP</h2>
+      <label>VIP Sale<input type="number" name="VIP Sale" inputmode="decimal" step="any" min="0" required></label>
+      <label>SKY Sale<input type="number" name="SKY Sale" inputmode="decimal" step="any" min="0" required></label>
+      <label>ARI Sale<input type="number" name="ARI Sale" inputmode="decimal" step="any" min="0" required></label>
+      <label>VIP Total Sale<input type="number" name="VIP Total Sale" inputmode="decimal" step="any" min="0" required></label>
+      <label>VIP MTD Sale<input type="number" name="VIP MTD Sale" inputmode="decimal" step="any" min="0" required></label>
+    </div>
+
+    <div class="card">
+      <h2>AT / KT</h2>
+      <label>AT<input type="number" name="AT" inputmode="decimal" step="any" min="0" required></label>
+      <label>KT<input type="number" name="KT" inputmode="decimal" step="any" min="0" required></label>
+      <label>AT Total Sale<input type="number" name="AT TOTAL SALE" inputmode="decimal" step="any" min="0" required></label>
+      <label>AT MTD<input type="number" name="AT MTD" inputmode="decimal" step="any" min="0" required></label>
+    </div>
+
+    <div class="card">
+      <h2>Safari</h2>
+      <label>Safari Sale<input type="number" name="SAFARI SALE" inputmode="decimal" step="any" min="0" required></label>
+      <label>Safari MTD<input type="number" name="SAFARI MTD" inputmode="decimal" step="any" min="0" required></label>
+    </div>
+
+    <button id="btn" type="submit">Submit</button>
+    <div id="msg"></div>
+  </form>
+</div>
+
+<script>
+/* ====== CONFIG — edit these two things ====== */
+
+// 1) Paste your Google Apps Script Web App URL here (see README.md)
+const SHEET_URL = "PASTE_WEB_APP_URL_HERE";
+
+// 2) Your store list (one name per line inside the quotes, comma-separated)
+const STORES = [
+ {
+  "code": "706227",
+  "name": "BB-JAIPUR-PINK SQUARE MALL"
+ },
+ {
+  "code": "706292",
+  "name": "BB-UDAIPUR-CELEBRATION MALL-MF"
+ },
+ {
+  "code": "705362",
+  "name": "BB-RAJASTHAN- SRI GANGA NAGAR-"
+ },
+ {
+  "code": "705360",
+  "name": "BB-JAIPUR-CITY SQUARE MALL-TON"
+ },
+ {
+  "code": "706609",
+  "name": "BB-Udaipur Kumbha Marg"
+ },
+ {
+  "code": "706495",
+  "name": "BB-JAIPUR-TRINITI MALL-SANGANE"
+ },
+ {
+  "code": "706497",
+  "name": "BB-JAIPUR-VAISHALI NAGAR-VAISH"
+ },
+ {
+  "code": "706496",
+  "name": "BB-AJMER-OASIS MALL-PANCHSHEEL"
+ },
+ {
+  "code": "706610",
+  "name": "BB-KOTA-JHALAWAR ROAD"
+ },
+ {
+  "code": "706494",
+  "name": "BB-JODHPUR-OLD OLYMPIC CINEMA"
+ },
+ {
+  "code": "706330",
+  "name": "BB-BHIWADI-ALWAR ROAD-MF"
+ },
+ {
+  "code": "707088",
+  "name": "RELIANCE RETAIL LIMITED - SURATGARH"
+ },
+ {
+  "code": "707206",
+  "name": "RELIANCE RETAIL LIMITED -SB MAKRANA"
+ },
+ {
+  "code": "707745",
+  "name": "RELIANCE RETAIL LIMITED -SB VIVA CITY"
+ },
+ {
+  "code": "706386",
+  "name": "AVENUE SUPERMARTS LTD JAIPUR pratapnagar"
+ },
+ {
+  "code": "706387",
+  "name": "AVENUE SUPERMARTS LTD JAIPUR KOTA"
+ },
+ {
+  "code": "706388",
+  "name": "AVENUE SUPERMARTS LTD Lal Kothi"
+ },
+ {
+  "code": "706389",
+  "name": "AVENUE SUPERMARTS LTD JAIPUR ajmer"
+ },
+ {
+  "code": "706390",
+  "name": "AVENUE SUPERMARTS LTD JAIPUR Triton Mall"
+ },
+ {
+  "code": "706391",
+  "name": "AVENUE SUPERMARTS LTD JAIPUR Bhilwara"
+ },
+ {
+  "code": "706392",
+  "name": "AVENUE SUPERMARTS LTD JAIPUR Malviya Nagar"
+ },
+ {
+  "code": "706393",
+  "name": "AVENUE SUPERMARTS NARSINGHPUR"
+ },
+ {
+  "code": "706394",
+  "name": "AVENUE SUPERMARTS KALWAD ROAD"
+ },
+ {
+  "code": "706395",
+  "name": "AVENUE SUPERMARTS Alwar"
+ },
+ {
+  "code": "703431",
+  "name": "AVENUE SUPERMARTS KISHANGARH"
+ },
+ {
+  "code": "708092",
+  "name": "AVENUE SUPERMARTS LTD JAIPUR MANSAROVAR"
+ },
+ {
+  "code": "708093",
+  "name": "AVENUE SUPERMARTS LTD JODHPUR"
+ },
+ {
+  "code": "708336",
+  "name": "AVENUE SUPERMARTS LTD BINDAYAKA"
+ },
+ {
+  "code": "708932",
+  "name": "AVENUE SUPERMARTS LTD RAJSAMAND"
+ },
+ {
+  "code": "708933",
+  "name": "AVENUE SUPERMARTS LTD KUNHADI KOTA"
+ },
+ {
+  "code": "708934",
+  "name": "AVENUE SUPERMARTS LTD KUCHAMAN"
+ },
+ {
+  "code": "709697",
+  "name": "AVENUE SUPERMARTS LTD SIRSI"
+ },
+ {
+  "code": "709698",
+  "name": "AVENUE SUPERMARTS LTD BEAWAR"
+ },
+ {
+  "code": "709699",
+  "name": "AVENUE SUPERMARTS LTD BIKANER"
+ },
+ {
+  "code": "709700",
+  "name": "AVENUE SUPERMARTS LTD NAGAUR"
+ },
+ {
+  "code": "709742",
+  "name": "AVENUE SUPERMARTS LTD BHANKROTA"
+ },
+ {
+  "code": "709936",
+  "name": "Dmart - Kishmidesar(Shiv Valley)Bikaner"
+ },
+ {
+  "code": "709973",
+  "name": "Dmart - Bhiwadi Alwar Rajasthan"
+ },
+ {
+  "code": "710099",
+  "name": "DMART - AVENUESUPERMARTSLTD. Pali"
+ },
+ {
+  "code": "710100",
+  "name": "DMART - AVENUESUPERMARTSLTD. Baran"
+ },
+ {
+  "code": "710110",
+  "name": "DMART - AVENUESUPERMARTSLTD. Mandore"
+ },
+ {
+  "code": "710111",
+  "name": "DMART - AVENUESUPERMARTSLTD. Kota 3"
+ },
+ {
+  "code": "710266",
+  "name": "DMART - AVENUESUPERMARTSLTD. Sangriya"
+ },
+ {
+  "code": "710383",
+  "name": "Dmart - Pratap Nagar Udaipur"
+ },
+ {
+  "code": "710432",
+  "name": "Dmart - Manpur Nagalya (Tonk Rd) Jaipur"
+ },
+ {
+  "code": "702880",
+  "name": "VISHAL MEGA MART-VDDN jaipur"
+ },
+ {
+  "code": "704107",
+  "name": "VISHAL MEGA MART-Alwar"
+ },
+ {
+  "code": "702884",
+  "name": "VISHAL MEGA MART- KOTA"
+ },
+ {
+  "code": "702882",
+  "name": "VISHAL MEGA MART- Ajmer Road-Jaipur"
+ },
+ {
+  "code": "702883",
+  "name": "VISHAL MEGA MART- Vaishali Ngr"
+ },
+ {
+  "code": "703376",
+  "name": "VISHAL MEGA MART- Bikaner"
+ },
+ {
+  "code": "704099",
+  "name": "VISHAL MEGA MART UDAIPUR"
+ },
+ {
+  "code": "705277",
+  "name": "Vishal Megamart Bhiwadi"
+ },
+ {
+  "code": "704133",
+  "name": "Vishal Megamart Ajmer"
+ },
+ {
+  "code": "704135",
+  "name": "Vishal Megamart Jodhpur"
+ },
+ {
+  "code": "704134",
+  "name": "Vishal Megamart Beawar"
+ },
+ {
+  "code": "706060",
+  "name": "Vishal Gopalpura"
+ },
+ {
+  "code": "706059",
+  "name": "Vishal vaishali 7"
+ },
+ {
+  "code": "707272",
+  "name": "Vishal Tonk Road"
+ },
+ {
+  "code": "704137",
+  "name": "Vishal Sri Ganganagar"
+ },
+ {
+  "code": "708926",
+  "name": "Vishal Churu"
+ },
+ {
+  "code": "709668",
+  "name": "AIRPLAZA RETAIL HOLDINGS PVT LTD-HR BHILWARA"
+ },
+ {
+  "code": "709669",
+  "name": "AIRPLAZA RETAIL HOLDINGS PVT LTD-HR BANSWARA"
+ },
+ {
+  "code": "709670",
+  "name": "AIRPLAZA RETAIL HOLDINGS PVT LTD-HR AJMER"
+ },
+ {
+  "code": "709671",
+  "name": "AIRPLAZA RETAIL HOLDINGS PVT LTD-HR UDAIPUR"
+ },
+ {
+  "code": "709672",
+  "name": "AIRPLAZA RETAIL HOLDINGS PVT LTD-HR JHUNJHUNU"
+ },
+ {
+  "code": "709673",
+  "name": "AIRPLAZA RETAIL HOLDINGS PVT LTD-HR CHITTORAGARH"
+ },
+ {
+  "code": "709674",
+  "name": "AIRPLAZA RETAIL HOLDINGS PVT LTD-HR RAJSAMAND"
+ },
+ {
+  "code": "709913",
+  "name": "AIRPLAZA RETAIL HOLDINGS PVT LTD-HR35"
+ },
+ {
+  "code": "710067",
+  "name": "AIRPLAZA RETAIL HOLDINGS PVT LTD-HR33"
+ },
+ {
+  "code": "710101",
+  "name": "AIRPLAZA RETAIL HOLDINGS PVT LTD-HR34"
+ },
+ {
+  "code": "701296",
+  "name": "METRO CASH & CARRY INDIA PVT. LTD"
+ },
+ {
+  "code": "708256",
+  "name": "METRO CASH & CARRY INDIA PRIVATE LT BHILWARA"
+ },
+ {
+  "code": "708252",
+  "name": "METRO CASH & CARRY INDIA PRIVATE LT AJMER"
+ },
+ {
+  "code": "704143",
+  "name": "RELIANCE RETAIL LIMITED - HANUMANGARH"
+ },
+ {
+  "code": "705020",
+  "name": "RELIANCE RETAIL LIMITED - Bhawani Raod"
+ },
+ {
+  "code": "704410",
+  "name": "RELIANCE RETAIL LIMITED - SMART-Bhilwara"
+ },
+ {
+  "code": "704329",
+  "name": "RELIANCE RETAIL LIMITED - SUPER PAL"
+ },
+ {
+  "code": "703818",
+  "name": "RELIANCE RETAIL LIMITED Udaipur"
+ },
+ {
+  "code": "703951",
+  "name": "RELIANCE RETAIL LIMITED -SUPER ALWAR"
+ },
+ {
+  "code": "701301",
+  "name": "RELIANCE RETAIL LTD-(HYP) BHIWADI J"
+ },
+ {
+  "code": "704206",
+  "name": "RELIANCE RETAIL LIMITED - SMART SIKAR"
+ },
+ {
+  "code": "703910",
+  "name": "RELIANCE RETAIL LIMITED -SGNR"
+ },
+ {
+  "code": "704496",
+  "name": "RELIANCE RETAIL LIMITED-SUPER JODHP"
+ },
+ {
+  "code": "704781",
+  "name": "RELIANCE SMART LTD Kuchaman"
+ },
+ {
+  "code": "704659",
+  "name": "RELIANCE SMART LTD KOTA"
+ },
+ {
+  "code": "704805",
+  "name": "RELIANCE SMART LTD RAJSAMAND"
+ },
+ {
+  "code": "704823",
+  "name": "RELIANCE SMART LTD CHURU"
+ },
+ {
+  "code": "704990",
+  "name": "RELIANCE SMART JAIPUR VKI"
+ },
+ {
+  "code": "705130",
+  "name": "RELIANCE SMART BHILWARA-2"
+ },
+ {
+  "code": "705129",
+  "name": "RELIANCE SMART AJMER"
+ },
+ {
+  "code": "705021",
+  "name": "RELIANCE SMART ELEMENTS MALL"
+ },
+ {
+  "code": "705024",
+  "name": "RELIANCE SMART VAISHALI NGR AJMER"
+ },
+ {
+  "code": "705019",
+  "name": "Reliance Smart Nokha"
+ },
+ {
+  "code": "707086",
+  "name": "RELIANCE RETAIL LIMITED - NEEMRANA"
+ },
+ {
+  "code": "704144",
+  "name": "RELIANCE RETAIL LIMITED - STC"
+ },
+ {
+  "code": "705025",
+  "name": "RELIANCE RETAIL LIMITED - LAKE CITY"
+ },
+ {
+  "code": "707464",
+  "name": "RELIANCE RETAIL LIMITED -SMART BANS"
+ },
+ {
+  "code": "707917",
+  "name": "RELIANCE RETAIL LIMITED-SB CAPITAL -CAPITAL GALLERIA"
+ },
+ {
+  "code": "707916",
+  "name": "RELIANCE RETAIL LIMITED-SB JAIPUR M AMER ROAD"
+ },
+ {
+  "code": "708077",
+  "name": "RELIANCE RETAIL LTD SMART NATHDWARA"
+ },
+ {
+  "code": "708242",
+  "name": "RELIANCE RETAIL LIMITED-SMART JHUNJ"
+ },
+ {
+  "code": "708210",
+  "name": "RELIANCE RETAIL LIMITED-SMART MITTA"
+ },
+ {
+  "code": "708378",
+  "name": "RELIANCE RETAIL LIMITED-PHULERA"
+ },
+ {
+  "code": "708935",
+  "name": "RELIANCE RETAIL LIMITED-TONK"
+ },
+ {
+  "code": "709160",
+  "name": "RELIANCE RETAIL LIMITED-BIJAINAGAR"
+ },
+ {
+  "code": "709343",
+  "name": "RELIANCE RETAIL LIMITED-BIKANER"
+ },
+ {
+  "code": "709564",
+  "name": "RELIANCE RETAIL LIMITED-Bundi"
+ },
+ {
+  "code": "709566",
+  "name": "RELIANCE RETAIL LIMITED-Beawar"
+ },
+ {
+  "code": "709937",
+  "name": "RELIANCE RETAIL LIMITED-TE0O-HYP"
+ },
+ {
+  "code": "700899",
+  "name": "WAL-MART INDIA PVT LTD-KOTA"
+ },
+ {
+  "code": "702704",
+  "name": "RELIANCE FOOTPRINT Ganj Bhilwara"
+ },
+ {
+  "code": "701922",
+  "name": "RELIANCE FOOTPRINT Ajmer"
+ },
+ {
+  "code": "703571",
+  "name": "RELIANCE FOOTPRINT Bhilwara Mall"
+ },
+ {
+  "code": "706680",
+  "name": "FUTURE LIFESTYLE FASHIONS LIMITED"
+ },
+ {
+  "code": "706880",
+  "name": "RELIANCE RETAIL LIMITED-FF-TRIRO"
+ },
+ {
+  "code": "701349",
+  "name": "SHOPPERS STOP LTD -WTP( 182 )"
+ },
+ {
+  "code": "702922",
+  "name": "SHOPPERS STOP-UPASNA PL JAIPUR( 280 )"
+ },
+ {
+  "code": "706148",
+  "name": "SHOPPERS' STOP LIMITED - JODHPUR"
+ },
+ {
+  "code": "707630",
+  "name": "SHOPPERS STOP LTD UDAIPUR"
+ },
+ {
+  "code": "706947",
+  "name": "CT-JAIPUR-MANI SQUARE MALL"
+ },
+ {
+  "code": "700488",
+  "name": "MGF - Jaipur"
+ },
+ {
+  "code": "706946",
+  "name": "LIFESTYLE INTERNATIONAL PVT LTD KOTA"
+ },
+ {
+  "code": "708936",
+  "name": "LIFESTYLE INTERNATIONAL PVT LTD UDAIPUR"
+ },
+ {
+  "code": "705916",
+  "name": "Shoppers Stop-Vaishali"
+ },
+ {
+  "code": "708233",
+  "name": "SHOPPERS STOP LTD - KOTA"
+ },
+ {
+  "code": "707638",
+  "name": "Mansarover -Jaipur"
+ }
+];
+/* ============================================ */
+
+const f = document.getElementById("f"), btn = document.getElementById("btn"), msg = document.getElementById("msg"), sel = document.getElementById("store");
+STORES.forEach(s => sel.add(new Option(s.name, s.code)));
+
+function show(text, cls) { msg.textContent = text; msg.className = cls; }
+
+f.addEventListener("submit", async e => {
+  e.preventDefault();
+  if (!SHEET_URL || SHEET_URL.startsWith("PASTE")) { show("Not connected to Excel/Sheet yet — SHEET_URL is empty.", "err"); return; }
+  btn.disabled = true; btn.textContent = "Submitting…"; msg.className = "";
+  const values = Object.fromEntries(new FormData(f).entries());
+  delete values.Store;
+  const data = { code: sel.value, values };
+  try {
+    await fetch(SHEET_URL, { method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(data) });
+    show("Submitted ✓ — saved to the sheet.", "ok");
+    f.reset();
+  } catch (err) {
+    show("Could not submit. Check internet and try again.", "err");
+  }
+  btn.disabled = false; btn.textContent = "Submit";
+});
+</script>
+</body>
+</html>

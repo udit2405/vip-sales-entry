@@ -9,6 +9,13 @@ function doGet() {
     .addMetaTag('viewport', 'width=device-width, initial-scale=1');
 }
 
+// Used by the GitHub-hosted form: needs no Google account.
+function doPost(e) {
+  var d = JSON.parse(e.postData.contents);
+  submitSale(d.code, d.values);
+  return ContentService.createTextOutput('ok');
+}
+
 function sheet_() { return SpreadsheetApp.getActive().getSheets()[0]; }
 
 function getStores() {
