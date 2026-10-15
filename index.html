@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Daily Sales Entry</title>
+<style>
+  :root { --bg:#f4f5f7; --card:#fff; --ink:#1a1d23; --muted:#6b7280; --line:#d9dce3; --brand:#1d4ed8; --ok:#15803d; --err:#b91c1c; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif; }
+  .wrap { max-width:520px; margin:0 auto; padding:16px; }
+  h1 { font-size:22px; margin:8px 0 16px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; margin-bottom:14px; }
+  .card h2 { font-size:13px; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); margin:0 0 12px; }
+  label { display:block; font-weight:600; font-size:14px; margin:12px 0 4px; }
+  label:first-of-type { margin-top:0; }
+  input, select { width:100%; padding:12px; font-size:16px; border:1px solid var(--line); border-radius:8px; background:#fff; color:var(--ink); }
+  input:focus, select:focus { outline:2px solid var(--brand); border-color:var(--brand); }
+  button { width:100%; padding:14px; font-size:17px; font-weight:700; border:0; border-radius:10px; background:var(--brand); color:#fff; cursor:pointer; }
+  button:disabled { opacity:.6; cursor:default; }
+  #msg { margin-top:12px; padding:12px; border-radius:8px; display:none; font-weight:600; }
+  #msg.ok { display:block; background:#dcfce7; color:var(--ok); }
+  #msg.err { display:block; background:#fee2e2; color:var(--err); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Daily Sales Entry</h1>
+  <form id="f" autocomplete="off">
+    <div class="card">
+      <h2>Store</h2>
+      <label for="store">Store name</label>
+      <select id="store" name="Store" required><option value="">Select store…</option></select>
+    </div>
+
+    <div class="card">
+      <h2>VIP</h2>
+      <label>VIP Sale<input type="number" name="VIP Sale" inputmode="decimal" step="any" min="0" required></label>
+      <label>SKY Sale<input type="number" name="SKY Sale" inputmode="decimal" step="any" min="0" required></label>
+      <label>ARI Sale<input type="number" name="ARI Sale" inputmode="decimal" step="any" min="0" required></label>
+      <label>VIP Total Sale<input type="number" name="VIP Total Sale" inputmode="decimal" step="any" min="0" required></label>
+      <label>VIP MTD Sale<input type="number" name="VIP MTD Sale" inputmode="decimal" step="any" min="0" required></label>
+    </div>
+
+    <div class="card">
+      <h2>AT / KT</h2>
+      <label>AT<input type="number" name="AT" inputmode="decimal" step="any" min="0" required></label>
+      <label>KT<input type="number" name="KT" inputmode="decimal" step="any" min="0" required></label>
+      <label>AT Total Sale<input type="number" name="AT Total Sale" inputmode="decimal" step="any" min="0" required></label>
+      <label>AT MTD<input type="number" name="AT MTD" inputmode="decimal" step="any" min="0" required></label>
+    </div>
+
+    <div class="card">
+      <h2>Safari</h2>
+      <label>Safari Sale<input type="number" name="Safari Sale" inputmode="decimal" step="any" min="0" required></label>
+      <label>Safari MTD<input type="number" name="Safari MTD" inputmode="decimal" step="any" min="0" required></label>
+    </div>
+
+    <button id="btn" type="submit">Submit</button>
+    <div id="msg"></div>
+  </form>
+</div>
+
+<script>
+/* ====== CONFIG — edit these two things ====== */
+
+// 1) Paste your Google Apps Script Web App URL here (see README.md)
+const SHEET_URL = "";
+
+// 2) Your store list (one name per line inside the quotes, comma-separated)
+const STORES = [
+  "Store 1",
+  "Store 2",
+  "Store 3"
+];
+/* ============================================ */
+
+const f = document.getElementById("f"), btn = document.getElementById("btn"), msg = document.getElementById("msg"), sel = document.getElementById("store");
+STORES.forEach(s => sel.add(new Option(s, s)));
+
+function show(text, cls) { msg.textContent = text; msg.className = cls; }
+
+f.addEventListener("submit", async e => {
+  e.preventDefault();
+  if (!SHEET_URL) { show("Not connected to Excel/Sheet yet — SHEET_URL is empty.", "err"); return; }
+  btn.disabled = true; btn.textContent = "Submitting…"; msg.className = "";
+  const data = Object.fromEntries(new FormData(f).entries());
+  data.Timestamp = new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" });
+  try {
+    await fetch(SHEET_URL, { method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(data) });
+    show("Submitted ✓ — saved to the sheet.", "ok");
+    f.reset();
+  } catch (err) {
+    show("Could not submit. Check internet and try again.", "err");
+  }
+  btn.disabled = false; btn.textContent = "Submit";
+});
+</script>
+</body>
+</html>
