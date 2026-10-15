@@ -30,30 +30,32 @@
     <div class="card">
       <h2>Store</h2>
       <label for="store">Store name</label>
-      <select id="store" name="Store" required><option value="">Select store…</option></select>
+      <input id="store" list="stores" placeholder="Type to search or pick a store" required>
+      <datalist id="stores"></datalist>
+      <div id="code" style="font-size:13px;color:var(--muted);margin-top:6px;min-height:18px"></div>
     </div>
 
     <div class="card">
       <h2>VIP</h2>
-      <label>VIP Sale<input type="number" name="VIP Sale" inputmode="decimal" step="any" min="0" required></label>
-      <label>SKY Sale<input type="number" name="SKY Sale" inputmode="decimal" step="any" min="0" required></label>
-      <label>ARI Sale<input type="number" name="ARI Sale" inputmode="decimal" step="any" min="0" required></label>
-      <label>VIP Total Sale<input type="number" name="VIP Total Sale" inputmode="decimal" step="any" min="0" required></label>
-      <label>VIP MTD Sale<input type="number" name="VIP MTD Sale" inputmode="decimal" step="any" min="0" required></label>
+      <label>VIP Sale<input type="number" name="VIP Sale" inputmode="decimal" step="any" min="0"></label>
+      <label>SKY Sale<input type="number" name="SKY Sale" inputmode="decimal" step="any" min="0"></label>
+      <label>ARI Sale<input type="number" name="ARI Sale" inputmode="decimal" step="any" min="0"></label>
+      <label>VIP Total Sale<input type="number" name="VIP Total Sale" inputmode="decimal" step="any" min="0"></label>
+      <label>VIP MTD Sale<input type="number" name="VIP MTD Sale" inputmode="decimal" step="any" min="0"></label>
     </div>
 
     <div class="card">
       <h2>AT / KT</h2>
-      <label>AT<input type="number" name="AT" inputmode="decimal" step="any" min="0" required></label>
-      <label>KT<input type="number" name="KT" inputmode="decimal" step="any" min="0" required></label>
-      <label>AT Total Sale<input type="number" name="AT TOTAL SALE" inputmode="decimal" step="any" min="0" required></label>
-      <label>AT MTD<input type="number" name="AT MTD" inputmode="decimal" step="any" min="0" required></label>
+      <label>AT<input type="number" name="AT" inputmode="decimal" step="any" min="0"></label>
+      <label>KT<input type="number" name="KT" inputmode="decimal" step="any" min="0"></label>
+      <label>AT Total Sale<input type="number" name="AT TOTAL SALE" inputmode="decimal" step="any" min="0"></label>
+      <label>AT MTD<input type="number" name="AT MTD" inputmode="decimal" step="any" min="0"></label>
     </div>
 
     <div class="card">
       <h2>Safari</h2>
-      <label>Safari Sale<input type="number" name="SAFARI SALE" inputmode="decimal" step="any" min="0" required></label>
-      <label>Safari MTD<input type="number" name="SAFARI MTD" inputmode="decimal" step="any" min="0" required></label>
+      <label>Safari Sale<input type="number" name="SAFARI SALE" inputmode="decimal" step="any" min="0"></label>
+      <label>Safari MTD<input type="number" name="SAFARI MTD" inputmode="decimal" step="any" min="0"></label>
     </div>
 
     <button id="btn" type="submit">Submit</button>
@@ -581,7 +583,9 @@ const STORES = [
 /* ============================================ */
 
 const f = document.getElementById("f"), btn = document.getElementById("btn"), msg = document.getElementById("msg"), sel = document.getElementById("store");
-STORES.forEach(s => sel.add(new Option(s.name, s.code)));
+STORES.forEach(s => { const o = document.createElement("option"); o.value = s.name; document.getElementById("stores").appendChild(o); });
+const findStore = () => { const n = sel.value.trim().toLowerCase(); return STORES.find(s => s.name.toLowerCase() === n); };
+sel.addEventListener("input", () => { const s = findStore(); document.getElementById("code").textContent = s ? "SAP code: " + s.code : ""; });
 
 function show(text, cls) { msg.textContent = text; msg.className = cls; }
 
@@ -589,9 +593,11 @@ f.addEventListener("submit", async e => {
   e.preventDefault();
   if (!SHEET_URL || SHEET_URL.startsWith("PASTE")) { show("Not connected to Excel/Sheet yet — SHEET_URL is empty.", "err"); return; }
   btn.disabled = true; btn.textContent = "Submitting…"; msg.className = "";
-  const values = Object.fromEntries(new FormData(f).entries());
-  delete values.Store;
-  const data = { code: sel.value, values };
+  const store = findStore();
+  if (!store) { show("Please pick a store from the list.", "err"); return; }
+  const values = {};
+  f.querySelectorAll("input[name]").forEach(i => values[i.name] = i.value);
+  const data = { code: store.code, values };
   try {
     await fetch(SHEET_URL, { method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(data) });
     show("Submitted ✓ — saved to the sheet.", "ok");
