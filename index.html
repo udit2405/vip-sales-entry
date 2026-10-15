@@ -16,6 +16,10 @@
   label:first-of-type { margin-top:0; }
   input, select { width:100%; padding:12px; font-size:16px; border:1px solid var(--line); border-radius:8px; background:#fff; color:var(--ink); }
   input:focus, select:focus { outline:2px solid var(--brand); border-color:var(--brand); }
+  #sug { display:none; max-height:260px; overflow:auto; border:1px solid var(--line); border-radius:8px; margin-top:4px; background:#fff; }
+  #sug div { padding:11px 12px; border-bottom:1px solid var(--line); cursor:pointer; font-size:15px; }
+  #sug div:last-child { border-bottom:0; }
+  #sug div:hover, #sug div.on { background:#eef2ff; }
   button { width:100%; padding:14px; font-size:17px; font-weight:700; border:0; border-radius:10px; background:var(--brand); color:#fff; cursor:pointer; }
   button:disabled { opacity:.6; cursor:default; }
   #msg { margin-top:12px; padding:12px; border-radius:8px; display:none; font-weight:600; }
@@ -30,8 +34,8 @@
     <div class="card">
       <h2>Store</h2>
       <label for="store">Store name</label>
-      <input id="store" list="stores" placeholder="Type to search or pick a store" required>
-      <datalist id="stores"></datalist>
+      <input id="store" placeholder="Type any part of the store name…" required autocomplete="off">
+      <div id="sug" role="listbox"></div>
       <div id="code" style="font-size:13px;color:var(--muted);margin-top:6px;min-height:18px"></div>
     </div>
 
@@ -583,9 +587,31 @@ const STORES = [
 /* ============================================ */
 
 const f = document.getElementById("f"), btn = document.getElementById("btn"), msg = document.getElementById("msg"), sel = document.getElementById("store");
-STORES.forEach(s => { const o = document.createElement("option"); o.value = s.name; document.getElementById("stores").appendChild(o); });
-const findStore = () => { const n = sel.value.trim().toLowerCase(); return STORES.find(s => s.name.toLowerCase() === n); };
-sel.addEventListener("input", () => { const s = findStore(); document.getElementById("code").textContent = s ? "SAP code: " + s.code : ""; });
+const norm = t => t.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+let chosen = null;
+const sug = document.getElementById("sug"), codeEl = document.getElementById("code");
+const findStore = () => chosen && norm(chosen.name) === norm(sel.value) ? chosen : (STORES.find(s => norm(s.name) === norm(sel.value)) || null);
+function setCode() { const s = findStore(); codeEl.textContent = s ? "SAP code: " + s.code : ""; }
+function render() {
+  const words = norm(sel.value).split(" ").filter(Boolean);
+  chosen = null; setCode();
+  if (!words.length) { sug.style.display = "none"; return; }
+  const hits = STORES.filter(s => { const n = norm(s.name); return words.every(w => n.includes(w)); }).slice(0, 30);
+  if (!hits.length) { sug.innerHTML = '<div style="color:var(--muted)">No store matches</div>'; sug.style.display = "block"; return; }
+  sug.innerHTML = "";
+  hits.forEach(s => {
+    const d = document.createElement("div");
+    d.textContent = s.name;
+    d.addEventListener("mousedown", e => { e.preventDefault(); pick(s); });
+    sug.appendChild(d);
+  });
+  sug.style.display = "block";
+}
+function pick(s) { chosen = s; sel.value = s.name; sug.style.display = "none"; setCode(); }
+sel.addEventListener("input", render);
+sel.addEventListener("focus", () => { if (sel.value && !findStore()) render(); });
+sel.addEventListener("blur", () => setTimeout(() => sug.style.display = "none", 150));
+sel.addEventListener("keydown", e => { if (e.key === "Enter" && sug.style.display === "block" && sug.firstChild && !findStore()) { e.preventDefault(); sug.firstChild.dispatchEvent(new Event("mousedown")); } });
 
 function show(text, cls) { msg.textContent = text; msg.className = cls; }
 
@@ -601,7 +627,7 @@ f.addEventListener("submit", async e => {
   try {
     await fetch(SHEET_URL, { method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(data) });
     show("Submitted ✓ — saved to the sheet.", "ok");
-    f.reset();
+    f.reset(); chosen = null; setCode();
   } catch (err) {
     show("Could not submit. Check internet and try again.", "err");
   }
